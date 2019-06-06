@@ -27,10 +27,14 @@ dropA		:: A.Arr a -> Int -> A.Arr a
 dropA xs n = A.subArray n ((A.length xs) - n) xs
 
 showtA		:: A.Arr a -> TreeView a (A.Arr a)
-showtA xs = error "Not implemented."
+showtA xs	| l == 0	= EMPTY
+			| l == 1	= ELT (xs ! 0)
+			| otherwise = NODE (takeA xs (quot l 2)) (dropA xs (quot l 2))
+				where l = A.length xs
 
 showlA     	:: A.Arr a -> ListView a (A.Arr a)
-showlA xs = error "Not implemented."
+showlA xs	| A.length xs == 0	= NIL
+		 	| otherwise			= CONS (xs ! 0) (dropA xs 1)
 
 reduceA		:: (a -> a -> a) -> a -> A.Arr a -> a
 reduceA f b xs = error "Not implemented."

@@ -3,86 +3,84 @@ module ListSeq where
 import Seq
 import Par
 
-data List a = Nil | Cons a (List a)
+emptyL		:: [a]
+emptyL = []
 
-emptyL		:: List a
-emptyL = Nil
+singletonL	:: a -> [a]
+singletonL x = [x]
 
-singletonL	:: a -> List a
-singletonL x = Cons x Nil
+lengthL		:: [a] -> Int
+lengthL []		= 0
+lengthL (x:xs) 	= (lengthL xs) + 1
 
-lengthL		:: List a -> Int
-lengthL Nil			= 0
-lengthL (Cons x xs) = lengthL xs + 1
+nthL		:: [a] -> Int -> a
+nthL [] _		= error "Invalid index."
+nthL (x:xs) 0	= x
+nthL (x:xs) n 	= nthL xs (n - 1)
 
-nthL		:: List a -> Int -> a
-nthL Nil _			= error "Invalid index."
-nthL (Cons x xs) 0	= x
-nthL (Cons x xs) n 	= nthL xs (n - 1)
-
-tabulateL	:: (Int -> a) -> Int -> List a
+tabulateL	:: (Int -> a) -> Int -> [a]
 tabulateL f n 	| n <= 0 	= error "Invalid index."
 				| otherwise = tabulateL' f 0 (n - 1)
-					where tabulateL' f a b 	| a == b 	= Cons (f a) Nil
-											| otherwise = let (x, xs) = f a ||| aux f (a + 1) b in Cons x xs
+					where tabulateL' f a b 	| a == b 	= [(f a)]
+											| otherwise = let (x, xs) = f a ||| tabulateL' f (a + 1) b in x:xs
 
-mapL		:: (a -> b) -> List a -> List b
-mapL _ Nil 			= Nil
-mapL f (Cons x xs)	= let (x', xs') = f x ||| mapL f xs
-						in Cons x' xs'
+mapL		:: (a -> b) -> [a] -> [b]
+mapL _ [] 		= []
+mapL f (x:xs)	= let (x', xs') = f x ||| mapL f xs
+					in x':xs'
 
-filterL		:: (a -> Bool) -> List a -> List a
-filterL _ Nil 			= Nil
-filterL f (Cons x xs)	= let (p, xs') = f x ||| filterL f xs
-							in if p then Cons x xs' else xs'
+filterL		:: (a -> Bool) -> [a] -> [a]
+filterL _ [] 		= []
+filterL f (x:xs)	= let (p, xs') = f x ||| filterL f xs
+						in if p then x:xs' else xs'
 
-appendL		:: List a -> List a -> List a
-appendL Nil ys 			= ys
-appendL (Cons x xs) ys 	= Cons x (appendL xs ys)
+appendL		:: [a] -> [a] -> [a]
+appendL [] ys 		= ys
+appendL (x:xs) ys 	= x:(appendL xs ys)
 
-takeL		:: List a -> Int -> List a
-takeL xs 0 			= Nil
-takeL Nil n 		= error "Invalid index."
-takeL (Cons x xs) n = Cons x (takeL xs (n - 1))
+takeL		:: [a] -> Int -> [a]
+takeL xs 0 		= []
+takeL [] n 		= error "Invalid index."
+takeL (x:xs) n 	= x:(takeL xs (n - 1))
 
-dropL		:: List a -> Int -> List a
-dropL xs 0 			= xs
-dropL Nil n			= error "Invalid index."
-dropL (Cons x xs) n = dropL xs (n - 1)
+dropL		:: [a] -> Int -> [a]
+dropL xs 0 		= xs
+dropL [] n		= error "Invalid index."
+dropL (x:xs) n 	= dropL xs (n - 1)
 
 
-showtL		:: List a -> TreeView a (List a)
-showtL Nil 			= EMPTY
-showtL (Cons x Nil)	= ELT x
-showtL xs 			= let (l', r') = takeL xs (quot l 2) ||| dropL xs (quot l 2) in NODE l' r'
-						where l = lengthL xs
+showtL		:: [a] -> TreeView a [a]
+showtL [] 	= EMPTY
+showtL [x]	= ELT x
+showtL xs 	= let (l', r') = takeL xs (quot l 2) ||| dropL xs (quot l 2) in NODE l' r'
+				where l = lengthL xs
 
-showlL     	:: List a -> ListView a (List a)
-showlL Nil 			= NIL
-showlL (Cons x xs)	= CONS x xs
+showlL     	:: [a] -> ListView a [a]
+showlL [] 		= NIL
+showlL (x:xs)	= CONS x xs
 
-joinL		:: List (List a) -> List a
-joinL Nil 			= Nil
-joinL (Cons x xs) 	= appendL x (joinL xs)
+joinL		:: [[a]] -> [a]
+joinL [] 		= []
+joinL (x:xs) 	= appendL x (joinL xs)
 
-reduceL		:: (a -> a -> a) -> a -> List a -> a
-reduceL f b Nil 			= b
-reduceL f b (Cons x Nil) 	= f b x
-reduceL f b (Cons x xs) 	= reduceL f e (combine f xs)
-								where	combine _ Nil 					= Nil
-										combine _ (Cons x Nil) 			= (Cons x Nil)
-										combine f (Cons x (Cons y ys))	= let (x', xs') = f x y ||| combine f ys in Cons x' xs'
+combine		:: (a -> a -> a) -> [a] -> [a]
+combine _ []		= []
+combine _ [x] 		= [x]
+combine f (x:y:ys)	= let (x', xs') = f x y ||| combine f ys in x':xs'
 
-scanL		:: (a -> a -> a) -> a -> List a -> (List a, a)
-scanL f b Nil 			= (Nil, b)
-scanL f b (Cons x Nil)	= (Cons b Nill, f b x)
-scanL f b (Cons x xs) 	= error "Not implemented."
+reduceL		:: (a -> a -> a) -> a -> [a] -> a
+reduceL f b [] 		= b
+reduceL f b [x] 	= f b x
+reduceL f b (x:xs) 	= reduceL f b (combine f xs)
 
-fromListL	:: [a] -> List a
-fromListL []		= Nil
-fromListL (x:xs) 	= Cons x (fromListL xs)
+scanL		:: (a -> a -> a) -> a -> [a] -> ([a], a)
+scanL f b [] 		= ([], b)
+scanL f b (x:xs) 	= let (xs', b') = scanL f (f b x) xs in (b:xs', b')
 
-instance Seq List where
+fromListL	:: [a] -> [a]
+fromListL xs = xs
+
+instance Seq [] where
 	emptyS		= emptyL
 	singletonS	= singletonL
 	lengthS		= lengthL
@@ -99,9 +97,3 @@ instance Seq List where
 	reduceS		= reduceL
 	scanS		= scanL
 	fromList	= fromListL
-
-instance Show a => Show (List a) where
-	show p 	= "<" ++ show' p (lengthL p) 0
-			where show' p n i 	| i == n     	= ">"
-								| i == (n - 1) 	= show (nthL p i) ++ ">"
-								| otherwise 	= show (nthL p i) ++ "," ++ show' p n (i + 1)
