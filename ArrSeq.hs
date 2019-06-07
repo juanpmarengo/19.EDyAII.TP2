@@ -36,11 +36,25 @@ showlA     	:: A.Arr a -> ListView a (A.Arr a)
 showlA xs	| A.length xs == 0	= NIL
 		 	| otherwise			= CONS (xs ! 0) (dropA xs 1)
 
+combine		:: (a -> a -> a) -> A.Arr a -> A.Arr a
+combine f xs	| l == 0		= emptyA
+				| mod l 2 == 0	= A.tabulate (\i -> f (xs ! (2 * i)) (xs ! ((2 * i) + 1))) (quot l 2)
+				| otherwise		= A.tabulate (\i -> if i == quot l 2 then xs ! (2 * i) else f (xs ! (2 * i)) (xs ! ((2 * i) + 1))) ((quot l 2) + 1)
+					where l = A.length xs
+
 reduceA		:: (a -> a -> a) -> a -> A.Arr a -> a
-reduceA f b xs = error "Not implemented."
+reduceA f b xs	| l == 0	= b
+				| l == 1	= f b (xs ! 0)
+				| otherwise = reduceA f b (combine f xs)
+					where l = A.length xs
 
 scanA		:: (a -> a -> a) -> a -> A.Arr a -> (A.Arr a, a)
-scanA = error "Not Implemented."
+scanA f b xs 	| A.length xs == 0	= (emptyS, b)
+				| A.length xs == 1	= (singletonS b, f b (xs ! 0))
+				| otherwise			= (A.tabulate (\i -> if mod i 2 == 0 then xs' ! (quot i 2) else f (xs' ! (quot i 2)) (xs ! (i - 1))) (A.length xs), b')
+					where 	(xs', b') = scanA f b (combine f xs)
+
+xs = A.fromList [1]
 
 instance Seq A.Arr where
 	emptyS		= emptyA
@@ -59,5 +73,3 @@ instance Seq A.Arr where
 	reduceS		= reduceA
 	scanS		= scanA
 	fromList	= A.fromList
-
-xs = A.fromList [1, 3, -2, 5]
